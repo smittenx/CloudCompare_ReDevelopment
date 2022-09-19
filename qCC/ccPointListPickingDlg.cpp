@@ -15,6 +15,7 @@
 //#                                                                        #
 //##########################################################################
 
+
 #include "ccPointListPickingDlg.h"
 
 //Qt
@@ -24,6 +25,11 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QSettings>
+#include <QtWidgets/QTableWidgetItem>
+#include <QInputDialog>
+#include <QByteArray>
+#include <QComboBox>
+#include <QStringList>
 
 //CCCoreLib
 #include <CCConst.h>
@@ -46,12 +52,17 @@
 //system
 #include <cassert>
 
+#include <cstring>
+
+class QTableWidgetItem;
+//class QComboBox;
+
 //semi persistent settings
 static int s_pickedPointsStartIndex = 0;
 static bool s_showGlobalCoordsCheckBoxChecked = false;
 static const char s_pickedPointContainerName[] = "Picked points list";
 static const char s_defaultLabelBaseName[] = "Point #";
-
+//static char s_defaultLabelBaseName[] = "Point #";
 ccPointListPickingDlg::ccPointListPickingDlg(ccPickingHub* pickingHub, QWidget* parent)
     : ccPointPickingGenericInterface(pickingHub, parent)
     , Ui::PointListPickingDlg()
@@ -63,12 +74,19 @@ ccPointListPickingDlg::ccPointListPickingDlg(ccPickingHub* pickingHub, QWidget* 
 
 	exportToolButton->setPopupMode(QToolButton::MenuButtonPopup);
 	QMenu* menu = new QMenu(exportToolButton);
+	/*
 	QAction* exportASCII_xyz = menu->addAction("x,y,z");
 	QAction* exportASCII_ixyz = menu->addAction("local index,x,y,z");
 	QAction* exportASCII_gxyz = menu->addAction("global index,x,y,z");
 	QAction* exportASCII_lxyz = menu->addAction("label name,x,y,z");
+    */
+    QAction* exportASCII_Icxyz = menu->addAction("label name, class, x, y, z");
+    /*
 	QAction* exportToNewCloud = menu->addAction("new cloud");
 	QAction* exportToNewPolyline = menu->addAction("new polyline");
+	*/
+    QAction *exportToReferencePolyline = menu->addAction("new reference polyline");
+
 	exportToolButton->setMenu(menu);
 
 	tableWidget->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
@@ -80,12 +98,20 @@ ccPointListPickingDlg::ccPointListPickingDlg(ccPickingHub* pickingHub, QWidget* 
 	connect(revertToolButton,		&QAbstractButton::clicked,	this,				&ccPointListPickingDlg::removeLastEntry);
 	connect(validToolButton,		&QAbstractButton::clicked,	this,				&ccPointListPickingDlg::applyAndExit);
 	connect(exportToolButton,		&QAbstractButton::clicked,	exportToolButton,	&QToolButton::showMenu);
+	/*
 	connect(exportASCII_xyz,		&QAction::triggered,		this,				&ccPointListPickingDlg::exportToASCII_xyz);
 	connect(exportASCII_ixyz,		&QAction::triggered,		this,				&ccPointListPickingDlg::exportToASCII_ixyz);
 	connect(exportASCII_gxyz,		&QAction::triggered,		this,				&ccPointListPickingDlg::exportToASCII_gxyz);
 	connect(exportASCII_lxyz,		&QAction::triggered,		this,				&ccPointListPickingDlg::exportToASCII_lxyz);
+	*/
+	connect(exportASCII_Icxyz,       &QAction::triggered,      this,        &ccPointListPickingDlg::exportToASCII_Icxyz);
+	/*
 	connect(exportToNewCloud,		&QAction::triggered,		this,				&ccPointListPickingDlg::exportToNewCloud);
 	connect(exportToNewPolyline,	&QAction::triggered,		this,				&ccPointListPickingDlg::exportToNewPolyline);
+	*/
+    connect(exportToReferencePolyline, &QAction::triggered, this, &ccPointListPickingDlg::exportToReferencePolyline);
+
+	connect(setLabel,                              &QAbstractButton::clicked,         this,              &ccPointListPickingDlg::setlabel);
 	
 	connect(markerSizeSpinBox,	qOverload<int>(&QSpinBox::valueChanged),	this,	&ccPointListPickingDlg::markerSizeChanged);
 	connect(startIndexSpinBox,	qOverload<int>(&QSpinBox::valueChanged),	this,	&ccPointListPickingDlg::startIndexChanged);
@@ -414,7 +440,7 @@ void ccPointListPickingDlg::exportToASCII(ExportFormat format)
 
 	QSettings settings;
 	settings.beginGroup("PointListPickingDlg");
-	QString filename = settings.value("filename", "picking_list.txt").toString();
+	QString filename = settings.value("filename", "picking_list.csv").toString();
 	settings.endGroup();
 
 	filename = QFileDialog::getSaveFileName(this,
@@ -465,14 +491,42 @@ void ccPointListPickingDlg::exportToASCII(ExportFormat format)
 
 	QTextStream stream(&fp);
 	stream.setRealNumberPrecision(12);
+    
+
+	//object的第一个点的index
+	int object_start_index = 0;
+	//当前index的前一个index的标签
+	QString preclass = labels[0]->getClass();
 	for (unsigned i = 0; i < count; ++i)
 	{
+
 		assert(labels[i]->size() == 1);
 		const cc2DLabel::PickedPoint& PP = labels[i]->getPickedPoint(0);
 		CCVector3 P = PP.getPointPosition();
+        // 由于combobox获得的cell中信息为上一index的内容，因此需要对i=0进行额外处理
+		if(i == 0)
+		    {
+
+			    //stream << labels[i]->getName()<<',';
+				stream << i<<',';
+		        stream << labels[i]->getClass()<<',';
+			    preclass = labels[i]->getClass();
+
+			    stream	<< static_cast<double>(P.x) / scale - shift.x << ','
+				    << static_cast<double>(P.y) / scale - shift.y << ','
+				    << static_cast<double>(P.z) / scale - shift.z << endl;
+			    continue;
+		    }
+
+    //9.9 添加内容 读取combobox
+            QWidget* widget = tableWidget->cellWidget(i-1, 5);
+		    QComboBox *combox = (QComboBox*)widget;
+		    QString string = combox->currentText();
+		    QString str = "YES";
 
 		switch (format)
 		{
+		/*
 		case PLP_ASCII_EXPORT_IXYZ:
 			stream << i + startIndex << ',';
 			break;
@@ -482,14 +536,81 @@ void ccPointListPickingDlg::exportToASCII(ExportFormat format)
 		case PLP_ASCII_EXPORT_LXYZ:
 			stream << labels[i]->getName() << ',';
 			break;
+        */
+		case PLP_ASCII_EXPORT_LCXYZ:
+
+			//9.9 添加内容 如果为闭环object 则最后保存的数据需要为第一个点数据
+			if((QString::compare(preclass, labels[i]->getClass()) )&&(!QString::compare(string, str)))
+			{
+				//9.9 添加内容 保存第一个点
+		        const cc2DLabel::PickedPoint& PP1 = labels[object_start_index]->getPickedPoint(0);
+		        CCVector3 P1 = PP1.getPointPosition();
+				
+				stream << labels[object_start_index]->getName()<<',';
+				stream << labels[object_start_index]->getClass()<<',';
+
+				stream	<< static_cast<double>(P1.x) / scale - shift.x << ','
+				<< static_cast<double>(P1.y) / scale - shift.y << ','
+				<< static_cast<double>(P1.z) / scale - shift.z << ','
+				<<'0'<<','
+				<<'1'<<','
+				<<'2'<<endl;
+			}
+
+			//9.8 增加内容 当obj发生变化，保存之后需要隔一行保存 同时更新obj的第一个点
+		    if(QString::compare(preclass, labels[i]->getClass()))
+			{
+				stream<<endl;
+			    object_start_index = i;
+				//ccLog::Print(QString(object_start_index));
+			}
+
+			//正常情况下需要保存的内容格式
+			{
+		    //stream << labels[i]->getName()<<',';
+		    stream <<i<<',';
+			stream << labels[i]->getClass()<<',';
+			preclass = labels[i]->getClass();
+
+			stream	<< static_cast<double>(P.x) / scale - shift.x << ','
+				<< static_cast<double>(P.y) / scale - shift.y << ','
+				<< static_cast<double>(P.z) / scale - shift.z << endl;
+			}
+
+			if(i == count-1)
+			{
+				QWidget* widget = tableWidget->cellWidget(i, 5);
+		        QComboBox *combox = (QComboBox*)widget;
+		        QString string = combox->currentText();
+
+				if(!QString::compare(string, str))
+				{
+                    //9.9 添加内容 保存第一个点
+		            const cc2DLabel::PickedPoint& PP1 = labels[object_start_index]->getPickedPoint(0);
+		            CCVector3 P1 = PP1.getPointPosition();
+				
+				    //stream << labels[object_start_index]->getName()<<',';
+				    stream <<object_start_index<<',';
+					stream << labels[object_start_index]->getClass()<<',';
+
+				    stream	<< static_cast<double>(P1.x) / scale - shift.x << ','
+				    << static_cast<double>(P1.y) / scale - shift.y << ','
+				    << static_cast<double>(P1.z) / scale - shift.z << endl;
+				}
+			}
+            
+			break;
+
 		default:
 			//nothing to do
 			break;
 		}
-
-		stream	<< static_cast<double>(P.x) / scale - shift.x << ','
-				<< static_cast<double>(P.y) / scale - shift.y << ','
+		//9.9 删除代码
+        /*
+		stream	<< static_cast<double>(P.x) / scale - shift.x << ';'
+				<< static_cast<double>(P.y) / scale - shift.y << ';'
 				<< static_cast<double>(P.z) / scale - shift.z << endl;
+	    */  
 	}
 
 	ccLog::Print(QString("[I/O] File '%1' saved successfully").arg(filename));
@@ -520,8 +641,13 @@ void ccPointListPickingDlg::updateList()
 		for ( int i = oldRowCount; i < count; ++i )
 		{
 			tableWidget->setVerticalHeaderItem( i, new QTableWidgetItem );
-
+/*
 			for ( int j = 0; j < 4; ++j )
+			{
+				tableWidget->setItem( i, j, new QTableWidgetItem );
+			}
+*/
+            for ( int j = 0; j < 6; ++j )
 			{
 				tableWidget->setItem( i, j, new QTableWidgetItem );
 			}
@@ -542,6 +668,30 @@ void ccPointListPickingDlg::updateList()
 		CCVector3 P = PP.getPointPosition();
 		CCVector3d Pd = (showAbsolute ? PP.cloudOrVertices()->toGlobal3d(P) : P);
 
+
+        //add checkbox into the tablewidget
+		QTableWidgetItem *checkbox = new QTableWidgetItem();
+		checkbox->setCheckState(Qt::Unchecked);
+		tableWidget->setItem(count-1, 0, checkbox);
+
+        //9.9 添加内容
+
+		//9.8 增加内容
+		//添加下拉框
+		
+		if(i == count-1)
+		{
+			QStringList qstr; 
+		    qstr<< "YES"<<"NO";
+	        QComboBox *closedloop_comBox = new QComboBox();
+		    closedloop_comBox->addItems(qstr);
+		    tableWidget->setCellWidget(i, 5, closedloop_comBox);
+		}
+		
+        
+		//connect(tableWidget, SIGNAL(cellChanged(int, int)), this, SLOT(changeCheck(int row, int col)));
+		//end
+   
 		//point index in list
 		tableWidget->verticalHeaderItem( i )->setText( QStringLiteral( "%1" ).arg( i + startIndex ) );
 
@@ -624,4 +774,249 @@ void ccPointListPickingDlg::processPickedPoint(const PickedItem& picked)
 
 	if (m_associatedWin)
 		m_associatedWin->redraw();
+}
+
+void ccPointListPickingDlg::setlabel()
+{
+	std::vector<cc2DLabel*> labels;
+
+	
+	QString dlgTitle="设置标签对话框";
+        QString txtLabel="请输入标签：";
+        QString defaultInput="";
+        QLineEdit::EchoMode echoMode=QLineEdit::Normal;
+        bool ok=false;
+        QString text = QInputDialog::getText(this, dlgTitle, txtLabel, echoMode, defaultInput, &ok);
+
+
+
+		const int count = static_cast<int>( getPickedPoints(labels) );
+		for ( int i = 0; i < count; ++i )
+		{
+			if(tableWidget->item(i, 0)->checkState() == Qt::Checked)
+			{
+                tableWidget->item( i, 4 )->setText( text );
+				labels[i]->setClass(text);
+			}
+			
+		}
+
+}
+
+void ccPointListPickingDlg::exportToReferencePolyline()
+{
+	if (!m_associatedEntity)
+		return;
+
+	std::vector<cc2DLabel*> labels;
+	unsigned count = getPickedPoints(labels);
+	if (count == 0)
+		return;
+
+	QSettings settings;
+	settings.beginGroup("PointListPickingDlg");
+	QString filename = settings.value("filename", "picking_list.csv").toString();
+	settings.endGroup();
+
+	filename = QFileDialog::getSaveFileName(this,
+	                                                                                        "Export to ASCII",
+																							filename,
+																							AsciiFilter::GetFileFilter());
+
+	if(filename.isEmpty())
+	            return;
+
+	settings.beginGroup("PointListPickingDlg");
+	settings.setValue("filename", filename);
+	settings.endGroup();
+
+	QFile fp(filename);
+	if (!fp.open(QFile::WriteOnly))
+	{
+		ccLog::Error(QString("Failed to open file '%1' for saving!").arg(filename));
+		return;		
+	}
+
+	//if a global shift exists, ask the user if it should be applied 
+    CCVector3d shift;
+	double scale = 1.0;
+    ccGenericPointCloud* asCloud = ccHObjectCaster::ToGenericPointCloud(m_associatedEntity);
+	if (asCloud)
+	{
+		shift = asCloud->getGlobalShift();
+		scale = asCloud->getGlobalScale();
+	}
+
+	if (shift.norm2() != 0 || scale != 1.0)
+	{
+		if (QMessageBox::warning(	this,
+		                            "Apply global shift",
+		                            "Do you want to apply global shift/scale to exported points?",
+		                            QMessageBox::Yes | QMessageBox::No,
+		                            QMessageBox::Yes ) == QMessageBox::No)
+		{
+			//reset shift
+			shift = CCVector3d(0,0,0);
+			scale = 1.0;
+		}
+	}	
+
+	QTextStream stream(&fp);
+	stream.setRealNumberPrecision(12);
+
+    std::vector<CCVector3> Points_vec;
+
+	for(int i = 0; i < labels.size(); i ++)
+	{
+		cc2DLabel::PickedPoint PP = labels[i]->getPickedPoint(0);
+		CCVector3 P = PP.getPointPosition();
+		Points_vec.push_back(P);
+	}
+	
+    //B三次样条
+	int num = labels.size() ;
+    std::vector<int> insertnum(num-1);
+
+	for(int i = 0; i <num - 1; i ++)
+	{
+		cc2DLabel::PickedPoint PP1 = labels[i]->getPickedPoint(0);
+		CCVector3 P1 = PP1.getPointPosition();
+        
+		cc2DLabel::PickedPoint PP2 = labels[i+1]->getPickedPoint(0);
+		CCVector3 P2 = PP2.getPointPosition();
+
+		int distance = sqrt((P1.x-P2.x)*(P1.x-P2.x)+(P1.y-P2.y)*(P1.y-P2.y));
+		insertnum[i] = distance/4;//每两个点间添加的点的数量
+	}
+    
+	QWidget* widget = tableWidget->cellWidget(num-1, 5);
+	QComboBox *combox = (QComboBox*)widget;
+	QString string = combox->currentText();
+    QString str = "YES";
+	bool isClosed = !QString::compare(string, str);
+    
+	ThreeOrderBSplineInterpolatePt(Points_vec, num, insertnum, isClosed);
+
+	for(int i = 0; i < Points_vec.size(); i ++)
+	{
+		CCVector3 P = Points_vec[i];
+
+		stream << i <<',';
+		stream << i << ',';//poi_type
+		stream << static_cast<double>(P.x)/scale - shift.x << ','
+		               << static_cast<double>(P.y)/scale - shift.y << ','
+					   << static_cast<double>(P.z)/scale - shift.z << ','
+					   <<i<<','//point_yaw
+					   <<i<<','//s
+					   <<i<<','//lng
+					   <<i <<','//lat
+					   <<i <<','//alt
+					   <<i << endl;//gear
+	}
+}
+
+void ccPointListPickingDlg::ThreeOrderBSplineInterpolatePt(std::vector<CCVector3>& Points_vec, int Num, std::vector<int> InsertNum, bool isClosed)
+{
+	if(Points_vec.empty()||InsertNum.size() == 0) return;
+
+	int InsertNumSum = 0;
+	for(int i = 0; i < Num - 1; i ++) InsertNumSum += InsertNum[i];
+
+	std::vector<CCVector3> Points_vec_new(Num + 2);
+
+	for(int i = 0; i < Num; i ++)
+	{
+		Points_vec_new[i+1] = Points_vec[i]; 
+	}
+    
+   if(isClosed)
+   {
+        Points_vec_new[0].x = Points_vec_new[Num].x;
+	    Points_vec_new[0].y = Points_vec_new[Num].y;
+        Points_vec_new[0].z = Points_vec_new[1].z;
+
+    	Points_vec_new[Num + 1].x = Points_vec_new[1].x;
+        Points_vec_new[Num + 1].y = Points_vec_new[1].y;
+        Points_vec_new[Num + 1].z = Points_vec_new[1].z;
+   }else
+   {
+        Points_vec_new[0].x = 2*Points_vec_new[1].x - Points_vec_new[2].x;
+    	Points_vec_new[0].y = 2*Points_vec_new[1].y - Points_vec_new[2].y;
+        Points_vec_new[0].z = Points_vec_new[1].z;
+
+    	Points_vec_new[Num + 1].x = 2*Points_vec_new[Num].x - Points_vec_new[Num-1].x;
+        Points_vec_new[Num + 1].y = 2*Points_vec_new[Num].y - Points_vec_new[Num-1].y;
+        Points_vec_new[Num + 1].z = Points_vec_new[Num].z;
+   }
+
+    CCVector3 NodePt1, NodePt2, NodePt3, NodePt4;
+	double t;
+
+	Points_vec.resize(Num + InsertNumSum);
+	
+	int totalnum = 0;
+
+	for(int i = 0; i < Num - 1; i ++)
+	{
+		NodePt1 = Points_vec_new[i];
+		NodePt2 = Points_vec_new[i+1];
+		NodePt3 = Points_vec_new[i+2];
+		NodePt4 = Points_vec_new[i+3];
+		double dt = 1.0/(InsertNum[i] + 1);
+        
+		for(int j = 0; j < InsertNum[i] + 1; j ++)
+		{
+			t = dt*j;
+			Points_vec[totalnum].x = F03(t)*NodePt1.x + F13(t)*NodePt2.x + F23(t)*NodePt3.x + F33(t)*NodePt4.x;
+			Points_vec[totalnum].y = F03(t)*NodePt1.y + F13(t)*NodePt2.y + F23(t)*NodePt3.y + F33(t)*NodePt4.y;
+			Points_vec[totalnum].z = Points_vec_new[0].z;
+			totalnum ++;
+		}
+    
+		if(i == Num - 2)
+		{
+			t = 1;
+			Points_vec[totalnum].x = F03(t)*NodePt1.x + F13(t)*NodePt2.x + F23(t)*NodePt3.x + F33(t)*NodePt4.x;
+			Points_vec[totalnum].y = F03(t)*NodePt1.y + F13(t)*NodePt2.y + F23(t)*NodePt3.y + F33(t)*NodePt4.y;
+			Points_vec[totalnum].z = Points_vec_new[0].z;
+			totalnum ++;
+		}
+		
+	}
+    
+	if(isClosed)
+	{
+		Points_vec.resize(Num + InsertNumSum + InsertNum[0]);
+        NodePt1 = Points_vec_new[Num-1];
+	    NodePt2 = Points_vec_new[Num];
+	    NodePt3 = Points_vec_new[1];
+	    NodePt4 = Points_vec_new[2];
+	    double dt = 1.0/(InsertNum[Num-2] + 1);
+
+        for(int j = 0; j < InsertNum[Num-2] + 1; j ++)
+    	{
+    		t = dt*j;
+    		Points_vec[totalnum].x = F03(t)*NodePt1.x + F13(t)*NodePt2.x + F23(t)*NodePt3.x + F33(t)*NodePt4.x;
+    		Points_vec[totalnum].y = F03(t)*NodePt1.y + F13(t)*NodePt2.y + F23(t)*NodePt3.y + F33(t)*NodePt4.y;
+    		Points_vec[totalnum].z = Points_vec_new[0].z;
+    		totalnum ++;
+    	}
+	}
+}
+
+double ccPointListPickingDlg::F03(double t)
+{
+	return 1.0/6*(-t*t*t+3*t*t-3*t+1);
+}
+double ccPointListPickingDlg::F13(double t)
+{
+	return 1.0/6*(3*t*t*t-6*t*t+4);
+}
+double ccPointListPickingDlg::F23(double t)
+{
+	return 1.0/6*(-3*t*t*t+3*t*t+3*t+1);
+}
+double ccPointListPickingDlg::F33(double t)
+{
+	return 1.0/6*t*t*t;
 }

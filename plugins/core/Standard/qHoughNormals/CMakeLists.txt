@@ -7,6 +7,7 @@ if( PLUGIN_STANDARD_QHOUGH_NORMALS )
 	AddPlugin( NAME ${PROJECT_NAME} )
 	
 	set( EIGEN_ROOT_DIR "" CACHE PATH "Eigen root (contains the Eigen directory)" )
+                message( WARNING ${EIGEN_ROOT_DIR})
 	if ( NOT EIGEN_ROOT_DIR )
 		message( SEND_ERROR "No Eigen root directory specified (EIGEN_ROOT_DIR)" )
 	endif()

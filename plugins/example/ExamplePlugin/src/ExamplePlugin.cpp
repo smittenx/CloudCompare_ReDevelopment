@@ -37,6 +37,8 @@
 
 #include "ActionA.h"
 
+
+
 // Default constructor:
 //	- pass the Qt resource path to the info.json file (from <yourPluginName>.qrc file) 
 //  - constructor should mainly be used to initialize actions and other members
@@ -93,3 +95,16 @@ QList<QAction *> ExamplePlugin::getActions()
 
 	return { m_action };
 }
+
+
+
+
+
+
+
+
+
+
+
+
+

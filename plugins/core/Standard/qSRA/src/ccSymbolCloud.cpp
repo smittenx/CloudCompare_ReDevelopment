@@ -157,19 +157,16 @@ void ccSymbolCloud::drawMeOnly(CC_DRAW_CONTEXT& context)
 		glDrawParams glParams;
 		getDrawingParameters(glParams);
 
+		//standard case: list names pushing
+		bool pushName = MACRO_DrawEntityNames(context);
 		bool hasLabels = !m_labels.empty();
-
-		bool entityPickingMode = MACRO_EntityPicking(context);
-		ccColor::Rgba pickingColor;
-		if (entityPickingMode)
+		if (pushName)
 		{
 			//not fast at all!
-			if (MACRO_FastEntityPicking(context))
-			{
+			if (MACRO_DrawFastNamesOnly(context))
 				return;
-			}
 
-			pickingColor = ccColor::Rgba(context.entityPicking.registerEntity(this), 255);
+			glFunc->glPushName(getUniqueIDForDisplay());
 			hasLabels = false; //no need to display labels in 'picking' mode
 		}
 
@@ -178,12 +175,7 @@ void ccSymbolCloud::drawMeOnly(CC_DRAW_CONTEXT& context)
 
 		//default color
 		const ccColor::Rgba* color = &context.pointsDefaultCol;
-		if (entityPickingMode)
-		{
-			color = &pickingColor;
-			glParams.showColors = false;
-		}
-		else if (isColorOverridden())
+		if (isColorOverridden())
 		{
 			color = &m_tempColor;
 			glParams.showColors = false;
@@ -233,7 +225,7 @@ void ccSymbolCloud::drawMeOnly(CC_DRAW_CONTEXT& context)
 					color = &getPointColor(i);
 				}
 				//we must reset the color each time as the call to displayText may change the active color!
-				ccGL::Color(glFunc, *color);
+				glFunc->glColor4ubv(color->rgba);
 
 				//draw associated symbol
 				if (m_showSymbols && m_symbolSize > 0.0)
@@ -259,5 +251,10 @@ void ccSymbolCloud::drawMeOnly(CC_DRAW_CONTEXT& context)
 
 		//restore original symbol size
 		m_symbolSize = symbolSizeBackup;
+
+		if (pushName)
+		{
+			glFunc->glPopName();
+		}
 	}
 }

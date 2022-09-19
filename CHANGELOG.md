@@ -44,28 +44,8 @@ v2.13.alpha (???) - (??/??/????)
 	- Command line:
 		- It is now possible to pass a SF name after -SET_ACTIVE_SF  instead of the field index
 			(use simple quotes if the scalar field name has spaces in it)
-		- The -SF_COLOR_SCALE option now works on meshes (vertices) as well
-
-	- New entity picking mechanism (to not rely on the deprecated OpenGL 'names' pushing mechanism)
-		- Should hopefully solve most of the random issues with picking
-
-- Bug fix:
-	- PCD: when transforming a cloud with a sensor (either manually, or via a registration tool, or via Edit > Apply Tranformation) and then exporting
-		the cloud to a PCD file, both the points AND the sensor were transformed, resulting in the PCD file coordinates to be in the wrong coordinate
-		system (as if the transformation had been applied twice)
-	- The QTextStream::pos method is slow and unreliable. This could cause some issue when loading ASCII files.
-	- When creating a new 3D view, it was not possible to pick an entity displayed in it by clicking on it.
-	- When clicking on an entity in a 3D view while holding CTRL, it was only possible to select it, not to deselect it if it was already selected.
-	- When using the Align tool on an aligned entity with labels, the initial view point could be invalid
-
-v2.12.4 (Kyiv) - (14/07/2022)
-----------------------
 
 - Bug fixes:
-	- CloudCompare 2.12.X (X<4) could miss some triangles when computing the Cloud-to-Mesh distances (resulting in slightly overestimated distances)
-	- CloudCompare would still apply the Global Shift even though it was rejected by the user (which is a bad idea ;). But the entity
-		Global Shift would then be (0, 0, 0), resulting in the loss of the original coordinate system.
-	- the scale in the lower-right part of the 3D view could have the wrong length (if the height of the window is larger than its width)
 	- FBX: CloudCompare couldn't properly load the materials (textures) of meshes with quads
 	- the Compass plugin was exporting large coordinates with a too small precision
 	- the command line could ignore the input global shift (set with -GLOBAL_SHIFT) if it was not sufficient

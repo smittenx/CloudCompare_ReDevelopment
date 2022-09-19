@@ -56,6 +56,9 @@ protected:
 	void exportToNewPolyline();
 	//! Removes last inserted point from list
 	void removeLastEntry();
+    //!  export list to a reference polyline(interpolation smoothing)
+	void exportToReferencePolyline();
+	/*
 	//! Exports list to an 'xyz' ASCII file
 	inline void exportToASCII_xyz() { return exportToASCII(PLP_ASCII_EXPORT_XYZ); }
 	//! Exports list to an 'ixyz' ASCII file
@@ -64,13 +67,23 @@ protected:
 	inline void exportToASCII_gxyz() { return exportToASCII(PLP_ASCII_EXPORT_GXYZ); }
 	//! Exports list to an 'lxyz' ASCII file
 	inline void exportToASCII_lxyz() { return exportToASCII(PLP_ASCII_EXPORT_LXYZ); }
-
+	*/
+	inline void exportToASCII_Icxyz() {return exportToASCII(PLP_ASCII_EXPORT_LCXYZ);}
 	//! Redraw window when marker size changes
 	void markerSizeChanged(int);
 	//! Redraw window when starting index changes
 	void startIndexChanged(int);
 	//! Updates point list widget
 	void updateList();
+	//! set the label on different point
+	void setlabel();
+
+    //!三次B样条拟合函数
+    void ThreeOrderBSplineInterpolatePt(std::vector<CCVector3>& Points_vec, int Num, std::vector<int> InsertNum, bool isClosed);
+	double F03(double t);
+	double F13(double t);
+	double F23(double t);
+	double F33(double t);
 
 protected:
 
@@ -83,10 +96,11 @@ protected:
 	//! Export format
 	/** See exportToASCII.
 	**/
-	enum ExportFormat {	PLP_ASCII_EXPORT_XYZ,
+	enum ExportFormat {	/*PLP_ASCII_EXPORT_XYZ,
 						PLP_ASCII_EXPORT_IXYZ,
 						PLP_ASCII_EXPORT_GXYZ,
-						PLP_ASCII_EXPORT_LXYZ
+						PLP_ASCII_EXPORT_LXYZ,*/
+						PLP_ASCII_EXPORT_LCXYZ
 	};
 
 	//! Exports list to an ASCII file

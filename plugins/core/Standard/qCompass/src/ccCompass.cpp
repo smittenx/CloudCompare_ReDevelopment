@@ -302,6 +302,7 @@ void ccCompass::doAction()
 	
 	//begin measuring
 	startMeasuring();
+	//m_dlg->start();
 }
 
 //loop through DB tree looking for ccCompass objects that
@@ -310,6 +311,7 @@ void ccCompass::doAction()
 //quite fast; hence we call it every time the selection changes.
 void ccCompass::tryLoading()
 {
+	
 	//setup progress window
 	ccProgressDialog prg(true, m_app->getMainWindow());
 	prg.setMethodTitle("Compass");
@@ -371,10 +373,12 @@ void ccCompass::tryLoading()
 	}
 
 	prg.close();
+	
 }
 
 void ccCompass::tryLoading(ccHObject* obj, std::vector<int>* originals, std::vector<ccHObject*>* replacements)
 {
+	
 	//recurse on children
 	for (unsigned i = 0; i < obj->getChildrenNumber(); i++)
 	{
@@ -484,11 +488,13 @@ void ccCompass::tryLoading(ccHObject* obj, std::vector<int>* originals, std::vec
 			return;
 		}
 	}
+	
 }
 
 //Begin measuring 
 bool ccCompass::startMeasuring()
 {
+	
 	//check valid gl window
 	if (!m_app->getActiveGLWindow())
 	{
@@ -508,6 +514,7 @@ bool ccCompass::startMeasuring()
 	m_dlg->start();
 
 	//activate active tool
+	
 	if (m_activeTool)
 	{
 		m_activeTool->toolActivated();
@@ -515,11 +522,13 @@ bool ccCompass::startMeasuring()
 	
 	m_active = true;
 	return true;
+	
 }
 
 //Exits measuring
 bool ccCompass::stopMeasuring(bool finalStop/*=false*/)
 {
+	
 	// Check if we were ever loaded. If the plugin wasn't loaded this will be nullptr.
 	if ( m_app == nullptr )
 	{
@@ -570,11 +579,13 @@ bool ccCompass::stopMeasuring(bool finalStop/*=false*/)
 	m_active = false;
 
 	return true;
+	
 }
 
 //registers this plugin with the picking hub
 bool ccCompass::startPicking()
 {
+	
 	if (m_picking) //already picking... don't need to add again
 		return true;
 
@@ -593,11 +604,13 @@ bool ccCompass::startPicking()
 
 	m_picking = true;
 	return true;
+	
 }
 
 //removes this plugin from the picking hub
 void  ccCompass::stopPicking()
 {
+	
 	//stop picking
 	if (m_app->pickingHub())
 	{
@@ -605,12 +618,13 @@ void  ccCompass::stopPicking()
 	}
 
 	m_picking = false;
+	
 }
 
 //Get the place/object that new measurements or interpretation should be stored
 ccHObject* ccCompass::getInsertPoint()
 {
-
+	
 	//check if there is an active GeoObject or we are in mapMode
 	if (ccCompass::mapMode || m_geoObject)
 	{
@@ -687,15 +701,18 @@ ccHObject* ccCompass::getInsertPoint()
 		return measurement_group; //this is the insert point
 	}
 	return nullptr; //no valid insert point
+	
 }
 
 //This function is called when a point is picked (through the picking hub)
+
 void ccCompass::onItemPicked(const ccPickingListener::PickedItem& pi)
 {
 	pointPicked(pi.entity, pi.itemIndex, pi.clickPoint.x(), pi.clickPoint.y(), pi.P3D); //map straight to pointPicked function
 }
 
 //Process point picks
+
 void ccCompass::pointPicked(ccHObject* entity, unsigned itemIdx, int x, int y, const CCVector3& P)
 {
 	if (!entity) //null pick
@@ -747,6 +764,7 @@ void ccCompass::pointPicked(ccHObject* entity, unsigned itemIdx, int x, int y, c
 
 bool ccCompass::eventFilter(QObject* obj, QEvent* event)
 {
+	
 	//update cost mode (just in case it has changed) & fit plane params
 	ccCompass::costMode = m_dlg->getCostMode();
 	ccCompass::fitPlanes = m_dlg->planeFitMode();
@@ -762,6 +780,7 @@ bool ccCompass::eventFilter(QObject* obj, QEvent* event)
 		}
 	}
 	return false;
+	
 }
 
 //exit this tool
@@ -775,6 +794,7 @@ void ccCompass::onClose()
 
 	//finish measuring
 	stopMeasuring();
+	
 }
 
 void ccCompass::onAccept()
@@ -843,6 +863,7 @@ void ccCompass::cleanupBeforeToolChange(bool autoRestartPicking/*=true*/)
 		//check picking is engaged
 		startPicking();
 	}
+	
 }
 
 //activate lineation mode

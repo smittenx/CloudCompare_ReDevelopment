@@ -101,10 +101,7 @@ class DrawMeOnlyVisitor
 {
 public:
 	
-	DrawMeOnlyVisitor(const ccBBox& box, const ccColor::Rgb& color)
-		: m_drawCellBBox(box)
-		, m_color(color)
-	{}
+	DrawMeOnlyVisitor(const ccBBox& box) : m_drawCellBBox(box) {}
 
 	void visit(CC_DRAW_CONTEXT& context, ccKdTree::BaseNode* node)
 	{
@@ -128,13 +125,12 @@ public:
 		}
 		else //if (node->isLeaf())
 		{
-			m_drawCellBBox.draw(context, m_color);
+			m_drawCellBBox.draw(context, ccColor::green);
 		}
 	}
 
 protected:
 	ccBBox m_drawCellBBox;
-	ccColor::Rgb m_color;
 
 };
 
@@ -153,21 +149,20 @@ void ccKdTree::drawMeOnly(CC_DRAW_CONTEXT& context)
 	if ( glFunc == nullptr )
 		return;
 	
-	ccColor::Rgb color = ccColor::green;
+	bool pushName = MACRO_DrawEntityNames(context);
 
-	bool entityPickingMode = MACRO_EntityPicking(context);
-	if (entityPickingMode)
+	if (pushName)
 	{
 		//not fast at all!
-		if (MACRO_FastEntityPicking(context))
-		{
+		if (MACRO_DrawFastNamesOnly(context))
 			return;
-		}
-
-		color = context.entityPicking.registerEntity(this);
+		glFunc->glPushName(getUniqueIDForDisplay());
 	}
 
-	DrawMeOnlyVisitor(m_associatedGenericCloud->getOwnBB(), color).visit(context, m_root);
+	DrawMeOnlyVisitor(m_associatedGenericCloud->getOwnBB()).visit(context, m_root);
+
+	if (pushName)
+		glFunc->glPopName();
 }
 
 bool ccKdTree::convertCellIndexToSF()

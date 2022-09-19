@@ -55,6 +55,8 @@ public:
 	void onNewSelection( const ccHObject::Container &selectedEntities ) override;
 	QList<QAction *> getActions() override;
 
+
+
 private:
 	//! Default action
 	/** You can add as many actions as you want in a plugin.

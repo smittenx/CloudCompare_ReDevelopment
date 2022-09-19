@@ -46,6 +46,10 @@ public:
 	//! Returns 'raw' name (no replacement of default keywords)
 	inline QString getRawName() const { return m_name; }
 
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!extra added 
+	inline QString getClass() const {return m_class;}
+
+	inline void setClass(QString mclass) {m_class = mclass;}
 	//! Gets label content (as it will be displayed)
 	/** \param precision displayed numbers precision
 		\return label body (one string per line)
@@ -309,6 +313,8 @@ protected:
 
 	//! Relative marker scale
 	float m_relMarkerScale;
+
+	QString m_class;
 };
 
 #endif //CC_2D_LABEL_HEADER

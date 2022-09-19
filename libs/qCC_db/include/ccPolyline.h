@@ -55,6 +55,7 @@ public:
 	bool isSerializable() const override { return true; }
 	bool hasColors() const override;
 	void applyGLTransformation(const ccGLMatrix& trans) override;
+	unsigned getUniqueIDForDisplay() const override;
 
 	//inherited methods (ccShiftedObject)
 	void setGlobalShift(const CCVector3d& shift) override;

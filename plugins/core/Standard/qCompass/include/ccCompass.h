@@ -50,7 +50,7 @@ public:
 	~ccCompass() override;
 
 	//inherited from ccPluginInterface
-	void stop() override;
+	void stop() override;//have not find the function
 
 	//inherited from ccStdPluginInterface
 	void onNewSelection(const ccHObject::Container& selectedEntities) override;
@@ -62,10 +62,10 @@ protected:
 	void doAction();
 
 	//start picking mode
-	bool startMeasuring();
+	bool startMeasuring();// function of display
 
 	//stop picking mode
-	bool stopMeasuring(bool finalStop = false);
+	bool stopMeasuring(bool finalStop = false);//have not find the function]
 
 	//inherited from ccPickingListener
 	void onItemPicked(const ccPickingListener::PickedItem& pi) override;
@@ -133,23 +133,23 @@ protected:
 protected:
 
 	//event to get mouse-move updates & trigger repaint of overlay circle
-	bool eventFilter(QObject* obj, QEvent* event) override;
+	bool eventFilter(QObject* obj, QEvent* event) override;//important 
 
 	//used to get the place/object that new measurements or interpretation should be stored
-	ccHObject* getInsertPoint();
+	ccHObject* getInsertPoint();// important
 
 	//cleans up pointers etc before changing tools
-	void cleanupBeforeToolChange(bool autoRestartPicking = true);
+	void cleanupBeforeToolChange(bool autoRestartPicking = true);//important
 
 	//registers this plugin with the picking hub
-	bool startPicking();
+	bool startPicking();//important
 
 	//removes this plugin from the picking hub
-	void stopPicking();
+	void stopPicking();//important
 
 	//checks if the passed object, or any of it's children, represent unloaded ccCompass objects (e.g. traces, fitplanes etc).
-	void tryLoading();
-	void tryLoading(ccHObject* obj, std::vector<int>* originals, std::vector<ccHObject*>* replacements);
+	void tryLoading();//have not find function
+	void tryLoading(ccHObject* obj, std::vector<int>* originals, std::vector<ccHObject*>* replacements);//have not find function
 
 	//Action to start ccCompass
 	QAction* m_action = nullptr;

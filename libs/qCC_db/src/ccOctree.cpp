@@ -133,7 +133,7 @@ void ccOctree::translateBoundingBox(const CCVector3& T)
 
 /*** RENDERING METHODS ***/
 
-void ccOctree::draw(CC_DRAW_CONTEXT& context, ccColor::Rgb* pickingColor/*=nullptr*/)
+void ccOctree::draw(CC_DRAW_CONTEXT& context)
 {
 	if (	!m_theAssociatedCloudAsGPC
 		||	m_thePointsAndTheirCellCodes.empty() )
@@ -156,10 +156,7 @@ void ccOctree::draw(CC_DRAW_CONTEXT& context, ccColor::Rgb* pickingColor/*=nullp
 		//(therefore we always render it dynamically)
 		
 		glFunc->glDisable(GL_LIGHTING);
-		if (pickingColor)
-			ccGL::Color(glFunc, *pickingColor);
-		else
-			ccGL::Color(glFunc, ccColor::green);
+		ccGL::Color4v(glFunc, ccColor::green.rgba);
 
 		void* additionalParameters[] = {	reinterpret_cast<void*>(m_frustumIntersector),
 											reinterpret_cast<void*>(glFunc)
@@ -173,30 +170,23 @@ void ccOctree::draw(CC_DRAW_CONTEXT& context, ccColor::Rgb* pickingColor/*=nullp
 		glDrawParams glParams;
 		m_theAssociatedCloudAsGPC->getDrawingParameters(glParams);
 
-		if (pickingColor)
-		{
-			ccGL::Color(glFunc, *pickingColor);
-			glParams.showSF = false;
-			glParams.showColors = false;
-			glParams.showNorms = false;
-		}
-		else if (!glParams.showColors)
-		{
-			ccGL::Color(glFunc, ccColor::white);
-		}
-
 		if (glParams.showNorms)
 		{
 			glFunc->glDisable(GL_RESCALE_NORMAL);
-			glFunc->glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, CC_DEFAULT_CLOUD_AMBIENT_COLOR.rgba);
-			glFunc->glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, CC_DEFAULT_CLOUD_SPECULAR_COLOR.rgba);
-			glFunc->glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, CC_DEFAULT_CLOUD_DIFFUSE_COLOR.rgba);
-			glFunc->glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, CC_DEFAULT_CLOUD_EMISSION_COLOR.rgba);
-			glFunc->glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, CC_DEFAULT_CLOUD_SHININESS);
+			glFunc->glMaterialfv(GL_FRONT_AND_BACK,	GL_AMBIENT,		CC_DEFAULT_CLOUD_AMBIENT_COLOR.rgba  );
+			glFunc->glMaterialfv(GL_FRONT_AND_BACK,	GL_SPECULAR,	CC_DEFAULT_CLOUD_SPECULAR_COLOR.rgba );
+			glFunc->glMaterialfv(GL_FRONT_AND_BACK,	GL_DIFFUSE,		CC_DEFAULT_CLOUD_DIFFUSE_COLOR.rgba  );
+			glFunc->glMaterialfv(GL_FRONT_AND_BACK,	GL_EMISSION,	CC_DEFAULT_CLOUD_EMISSION_COLOR.rgba );
+			glFunc->glMaterialf (GL_FRONT_AND_BACK,	GL_SHININESS,	CC_DEFAULT_CLOUD_SHININESS);
 			glFunc->glEnable(GL_LIGHTING);
 
 			glFunc->glEnable(GL_COLOR_MATERIAL);
 			glFunc->glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
+		}
+
+		if (!glParams.showColors)
+		{
+			ccGL::Color4v(glFunc, ccColor::white.rgba);
 		}
 
 		//shall we recompile the GL list?
@@ -311,7 +301,7 @@ bool ccOctree::DrawCellAsABox(	const CCCoreLib::DgmOctree::octreeCell& cell,
 	// outside
 	if (vis == ccOctreeFrustumIntersector::CELL_OUTSIDE_FRUSTUM)
 	{
-		ccGL::Color(glFunc, ccColor::green);
+		ccGL::Color4v(glFunc, ccColor::green.rgba);
 	}
 	else
 	{
@@ -319,10 +309,10 @@ bool ccOctree::DrawCellAsABox(	const CCCoreLib::DgmOctree::octreeCell& cell,
 		glFunc->glLineWidth(2.0f);
 		// inside
 		if (vis == ccOctreeFrustumIntersector::CELL_INSIDE_FRUSTUM)
-			ccGL::Color(glFunc, ccColor::magenta);
+			ccGL::Color4v(glFunc, ccColor::magenta.rgba);
 		// intersecting
 		else
-			ccGL::Color(glFunc, ccColor::blue);
+			ccGL::Color4v(glFunc, ccColor::blue.rgba);
 	}
 
 	glFunc->glBegin(GL_LINE_LOOP);
@@ -373,12 +363,13 @@ bool ccOctree::DrawCellAsAPoint(const CCCoreLib::DgmOctree::octreeCell& cell,
 	{
 		ScalarType dist = CCCoreLib::ScalarFieldTools::computeMeanScalarValue(cell.points);
 		const ccColor::Rgb* col = cloud->geScalarValueColor(dist);
-		ccGL::Color(glFunc, col ? *col : ccColor::lightGreyRGB);
+		glFunc->glColor3ubv(col ? col->rgb : ccColor::lightGreyRGB.rgb);
 	}
 	else if (glParams->showColors)
 	{
-		ccColor::Rgb col = ComputeAverageColor(cell.points, cloud);
-		ccGL::Color(glFunc, col);
+		ColorCompType col[3];
+		ComputeAverageColor(cell.points, cloud, col);
+		glFunc->glColor3ubv(col);
 	}
 
 	if (glParams->showNorms)
@@ -422,7 +413,8 @@ bool ccOctree::DrawCellAsAPrimitive(const CCCoreLib::DgmOctree::octreeCell& cell
 	}
 	else if (glParams->showColors)
 	{
-		ccColor::Rgb col = ComputeAverageColor(cell.points, cloud);
+		ccColor::Rgb col;
+		ComputeAverageColor(cell.points, cloud, col.rgb);
 		primitive->setColor(col);
 	}
 
@@ -444,10 +436,10 @@ bool ccOctree::DrawCellAsAPrimitive(const CCCoreLib::DgmOctree::octreeCell& cell
 	return true;
 }
 
-ccColor::Rgb ccOctree::ComputeAverageColor(CCCoreLib::ReferenceCloud* subset, ccGenericPointCloud* sourceCloud)
+void ccOctree::ComputeAverageColor(CCCoreLib::ReferenceCloud* subset, ccGenericPointCloud* sourceCloud, ColorCompType meanCol[])
 {
 	if (!subset || subset->size() == 0 || !sourceCloud)
-		return {};
+		return;
 
 	assert(sourceCloud->hasColors());
 	assert(subset->getAssociatedCloud() == static_cast<CCCoreLib::GenericIndexedCloud*>(sourceCloud));
@@ -463,9 +455,9 @@ ccColor::Rgb ccOctree::ComputeAverageColor(CCCoreLib::ReferenceCloud* subset, cc
 		sum.z += _theColor.b;
 	}
 
-	return ccColor::Rgb(static_cast<ColorCompType>(sum.x / n),
-						static_cast<ColorCompType>(sum.y / n),
-						static_cast<ColorCompType>(sum.z / n));
+	meanCol[0] = static_cast<ColorCompType>(sum.x / n);
+	meanCol[1] = static_cast<ColorCompType>(sum.y / n);
+	meanCol[2] = static_cast<ColorCompType>(sum.z / n);
 }
 
 CCVector3 ccOctree::ComputeAverageNorm(CCCoreLib::ReferenceCloud* subset, ccGenericPointCloud* sourceCloud)

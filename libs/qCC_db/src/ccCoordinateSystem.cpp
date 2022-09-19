@@ -230,23 +230,16 @@ void ccCoordinateSystem::drawMeOnly(CC_DRAW_CONTEXT& context)
 		if (glFunc == nullptr)
 			return;
 
-		//color-based entity picking
-		bool entityPickingMode = MACRO_EntityPicking(context);
-		ccColor::Rgb pickingColor;
-		if (entityPickingMode)
-		{
-			//not fast at all!
-			if (MACRO_FastEntityPicking(context))
-			{
-				return;
-			}
-			pickingColor = context.entityPicking.registerEntity(this);
-			ccGL::Color(glFunc, pickingColor);
-		}
-
 		glFunc->glPushMatrix();
 		glFunc->glMatrixMode(GL_MODELVIEW);
 		glFunc->glMultMatrixf(m_transformation.data());
+		
+		//standard case: list names pushing
+		bool pushName = MACRO_DrawEntityNames(context);
+		if (pushName)
+		{
+			glFunc->glPushName(getUniqueIDForDisplay());
+		}
 
 		if (m_width != 0)
 		{
@@ -255,20 +248,22 @@ void ccCoordinateSystem::drawMeOnly(CC_DRAW_CONTEXT& context)
 		}
 
 		glFunc->glBegin(GL_LINES);
-		if (!entityPickingMode)
-			ccGL::Color(glFunc, ccColor::red);
+		glFunc->glColor3f(1.0f, 0.0f, 0.0f);
 		glFunc->glVertex3f(0.0f, 0.0f, 0.0f);
-		glFunc->glVertex3f(m_DisplayScale * 2, 0.0f, 0.0f);
-		if (!entityPickingMode)
-			ccGL::Color(glFunc, ccColor::green);
+		glFunc->glVertex3f(m_DisplayScale*2, 0.0f, 0.0f);
+		glFunc->glColor3f(0.0f, 1.0f, 0.0f);
 		glFunc->glVertex3f(0.0f, 0.0f, 0.0f);
-		glFunc->glVertex3f(0.0f, m_DisplayScale * 2, 0.0f);
-		if (!entityPickingMode)
-			ccGL::Color(glFunc, ccColor::blueCC);
+		glFunc->glVertex3f(0.0f, m_DisplayScale*2, 0.0f);
+		glFunc->glColor3f(0.0f, 0.7f, 1.0f);
 		glFunc->glVertex3f(0.0f, 0.0f, 0.0f);
-		glFunc->glVertex3f(0.0f, 0.0f, m_DisplayScale * 2);
+		glFunc->glVertex3f(0.0f, 0.0f, m_DisplayScale*2);
 		glFunc->glEnd();
-
+		
+		if (pushName)
+		{
+			glFunc->glPopName();
+		}
+		
 		if (m_width != 0)
 		{
 			glFunc->glPopAttrib();

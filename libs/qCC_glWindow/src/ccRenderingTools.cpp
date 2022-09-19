@@ -450,7 +450,7 @@ void ccRenderingTools::DrawColorRamp(const CC_DRAW_CONTEXT& context, const ccSca
 
 		//first draw the 'border' as white quad
 		const ccColor::Rgbub& borderColor = textColor;
-		ccGL::Color(glFunc, borderColor);
+		glFunc->glColor3ubv(borderColor.rgb);
 		//GL_LINE_LOOP cuts the corners, and GL_LINES tries to round the borders!
 		DrawRectangleAsQuad<QOpenGLFunctions_2_1>(*glFunc, x - borderWidth, y - borderWidth, x + scaleWidth + borderWidth, y + scaleMaxHeight + 1 + borderWidth);
 
@@ -485,7 +485,7 @@ void ccRenderingTools::DrawColorRamp(const CC_DRAW_CONTEXT& context, const ccSca
 					}
 				}
 				assert(col);
-				ccGL::Color(glFunc, *col);
+				glFunc->glColor3ubv(col->rgb);
 
 				glFunc->glVertex2i(x, y + j);
 				glFunc->glVertex2i(x + scaleWidth, y + j);
@@ -522,7 +522,7 @@ void ccRenderingTools::DrawColorRamp(const CC_DRAW_CONTEXT& context, const ccSca
 				value = exp(value*c_log10);
 			
 			const ccColor::Rgb* col = sf->getColor(static_cast<ScalarType>(value));
-			ccGL::Color(glFunc, col ? *col : ccColor::lightGreyRGB);
+			glFunc->glColor3ubv(col ? col->rgb : ccColor::lightGreyRGB.rgb);
 			DrawRectangleAsQuad(*glFunc, x, y, x + scaleWidth, y + scaleMaxHeight + 1);
 		}
 

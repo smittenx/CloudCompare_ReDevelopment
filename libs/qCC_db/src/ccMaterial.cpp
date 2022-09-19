@@ -109,7 +109,7 @@ void ccMaterial::applyGL(const QOpenGLContext* context, bool lightEnabled, bool 
 	}
 	else
 	{
-		ccGL::Color(glFunc, m_diffuseFront);
+		glFunc->glColor4fv(m_diffuseFront.rgba);
 	}
 }
 

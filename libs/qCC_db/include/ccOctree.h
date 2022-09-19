@@ -95,7 +95,7 @@ public: //RENDERING
 	void setDisplayMode(DisplayMode mode);
 
 	//! Draws the octree
-	void draw(CC_DRAW_CONTEXT& context, ccColor::Rgb* pickingColor = nullptr);
+	void draw(CC_DRAW_CONTEXT& context);
 
 	//! Intersects octree with a camera sensor
 	bool intersectWithFrustum(	ccCameraSensor* sensor,
@@ -110,8 +110,9 @@ public: //RENDERING
 public: //HELPERS
 	
 	//! Computes the average color of a set of points
-	static ccColor::Rgb ComputeAverageColor(	CCCoreLib::ReferenceCloud* subset,
-												ccGenericPointCloud* sourceCloud);
+	static void ComputeAverageColor(CCCoreLib::ReferenceCloud* subset,
+									ccGenericPointCloud* sourceCloud,
+									ColorCompType meanCol[]);
 
 	//! Computes the average normal of a set of points
 	static CCVector3 ComputeAverageNorm(CCCoreLib::ReferenceCloud* subset,

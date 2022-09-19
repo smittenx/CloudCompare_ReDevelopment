@@ -20,12 +20,10 @@
 
 #include <cmath>
 
-//CCCoreLib
-#include <CCMath.h>
+#include "CCMath.h"
 
 //Local
 #include "ccGLMatrix.h"
-#include "ccColorTypes.h"
 
 //Qt
 #include <QOpenGLFunctions_2_1>
@@ -66,12 +64,6 @@ public:
 	//type-less glColor4Xv call (X=f,ub)
 	static inline void Color4v(QOpenGLFunctions_2_1* glFunc, const unsigned char* v) { glFunc->glColor4ubv(v); }
 	static inline void Color4v(QOpenGLFunctions_2_1* glFunc, const float* v) { glFunc->glColor4fv(v); }
-
-	//ccColor dedicated calls
-	static inline void Color(QOpenGLFunctions_2_1* glFunc, const ccColor::RgbaTpl<unsigned char>& col)	{ glFunc->glColor4ubv(col.rgba); }
-	static inline void Color(QOpenGLFunctions_2_1* glFunc, const ccColor::RgbaTpl<float>& col)			{ glFunc->glColor4fv(col.rgba);  }
-	static inline void Color(QOpenGLFunctions_2_1* glFunc, const ccColor::RgbTpl<unsigned char>& col)	{ glFunc->glColor3ubv(col.rgb);  }
-	static inline void Color(QOpenGLFunctions_2_1* glFunc, const ccColor::RgbTpl<float>& col)			{ glFunc->glColor3fv(col.rgb);   }
 
 public: //GLU equivalent methods
 

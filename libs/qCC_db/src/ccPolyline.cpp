@@ -197,26 +197,15 @@ void ccPolyline::drawMeOnly(CC_DRAW_CONTEXT& context)
 	if (glFunc == nullptr)
 		return;
 
-	//color-based entity picking
-	bool entityPickingMode = MACRO_EntityPicking(context);
-	ccColor::Rgb pickingColor;
-	if (entityPickingMode)
-	{
-		//not fast at all!
-		if (MACRO_FastEntityPicking(context))
-		{
-			return;
-		}
+	//standard case: list names pushing
+	bool pushName = MACRO_DrawEntityNames(context);
+	if (pushName)
+		glFunc->glPushName(getUniqueIDForDisplay());
 
-		pickingColor = context.entityPicking.registerEntity(this);
-	}
-
-	if (entityPickingMode)
-		ccGL::Color(glFunc, pickingColor);
-	else if (isColorOverridden())
-		ccGL::Color(glFunc, getTempColor());
+	if (isColorOverridden())
+		ccGL::Color4v(glFunc, getTempColor().rgba);
 	else if (colorsShown())
-		ccGL::Color(glFunc, m_rgbColor);
+		ccGL::Color3v(glFunc, m_rgbColor.rgb);
 
 	//display polyline
 	if (m_width != 0)
@@ -303,21 +292,19 @@ void ccPolyline::drawMeOnly(CC_DRAW_CONTEXT& context)
 			{
 				if (!c_unitArrow)
 				{
-					c_unitArrow.reset(new ccCone(0.5, 0.0, 1.0));
+					c_unitArrow = QSharedPointer<ccCone>(new ccCone(0.5, 0.0, 1.0));
 					c_unitArrow->showColors(true);
 					c_unitArrow->showNormals(false);
 					c_unitArrow->setVisible(true);
 					c_unitArrow->setEnabled(true);
 				}
-				if (entityPickingMode)
-					c_unitArrow->setTempColor(pickingColor);
-				else if (colorsShown())
+				if (colorsShown())
 					c_unitArrow->setTempColor(m_rgbColor);
 				else
 					c_unitArrow->setTempColor(context.pointsDefaultCol);
 				//build-up unit arrow own 'context'
 				CC_DRAW_CONTEXT markerContext = context;
-				markerContext.drawingFlags &= (~CC_ENTITY_PICKING); //we must remove the 'entity picking flag' so that the sphere doesn't override the picking color!
+				markerContext.drawingFlags &= (~CC_DRAW_ENTITY_NAMES); //we must remove the 'push name flag' so that the sphere doesn't push its own!
 				markerContext.display = nullptr;
 
 				glFunc->glMatrixMode(GL_MODELVIEW);
@@ -355,6 +342,11 @@ void ccPolyline::drawMeOnly(CC_DRAW_CONTEXT& context)
 		glFunc->glEnd();
 
 		glFunc->glPopAttrib();
+	}
+
+	if (pushName)
+	{
+		glFunc->glPopName();
 	}
 }
 
@@ -600,6 +592,14 @@ PointCoordinateType ccPolyline::computeLength() const
 	}
 
 	return length;
+}
+
+unsigned ccPolyline::getUniqueIDForDisplay() const
+{
+	if (m_parent && m_parent->getParent() && m_parent->getParent()->isA(CC_TYPES::FACET))
+		return m_parent->getParent()->getUniqueID();
+	else
+		return getUniqueID();
 }
 
 unsigned ccPolyline::segmentCount() const

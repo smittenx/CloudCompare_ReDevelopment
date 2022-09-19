@@ -170,8 +170,7 @@ public: //general
 		bool drawSidePlanes;
 		ccPointCloud* frustumCorners;
 		ccMesh* frustumHull;
-		//! Center of the circumscribed sphere
-		CCVector3 center;
+		CCVector3 center;					/**< center of the circumscribed sphere **/
 	};
 
 	//! Default constructor

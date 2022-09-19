@@ -306,7 +306,8 @@ void ccPointPropertiesDlg::processPickedPoint(const PickedItem& picked)
 	ccLog::Print(QString("[Picked] ") + m_label->getName());
 	for (QString& row : body)
 	{
-		ccLog::Print(QString("[Picked]\t- ") + row);
+		ccLog::Print(QString("[Picked]\t- ") + row+"hello");
+
 	}
 
 	if (m_associatedWin)

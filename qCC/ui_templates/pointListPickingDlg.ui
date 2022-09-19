@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>500</width>
+    <width>710</width>
     <height>227</height>
    </rect>
   </property>
@@ -144,6 +144,13 @@
        </property>
       </widget>
      </item>
+     <item>
+      <widget class="QToolButton" name="setLabel">
+       <property name="text">
+        <string>SetLabel</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
    <item>
@@ -156,6 +163,9 @@
      </property>
      <property name="selectionMode">
       <enum>QAbstractItemView::NoSelection</enum>
+     </property>
+     <property name="columnCount">
+      <number>6</number>
      </property>
      <attribute name="horizontalHeaderDefaultSectionSize">
       <number>115</number>
@@ -181,6 +191,16 @@
      <column>
       <property name="text">
        <string notr="true">Z</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>label</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>closed_loop</string>
       </property>
      </column>
     </widget>

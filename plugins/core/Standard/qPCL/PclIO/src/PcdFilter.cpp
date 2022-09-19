@@ -93,17 +93,25 @@ CC_FILE_ERROR PcdFilter::saveToFile(ccHObject* entity, const QString& filename, 
 		}
 	}
 
-	Eigen::Vector4f pos = Eigen::Vector4f::Zero();
-	Eigen::Quaternionf ori = Eigen::Quaternionf::Identity();
-	PCLCloud::Ptr pclCloud;
+	PCLCloud::Ptr pclCloud = cc2smReader(ccCloud).getAsSM();
+	if (!pclCloud)
+	{
+		return CC_FERR_THIRD_PARTY_LIB_FAILURE;
+	}
 
-	if (sensor)
+	Eigen::Vector4f pos;
+	Eigen::Quaternionf ori;
+	if (!sensor)
+	{
+		//no sensor data
+		pos = Eigen::Vector4f::Zero();
+		ori = Eigen::Quaternionf::Identity();
+	}
+	else
 	{
 		//get sensor data
-		ccGLMatrix sensorMatrix = sensor->getRigidTransformation();
-
-		//translation
-		CCVector3 trans = sensorMatrix.getTranslationAsVec3D();
+		ccGLMatrix mat = sensor->getRigidTransformation();
+		CCVector3 trans = mat.getTranslationAsVec3D();
 		pos(0) = trans.x;
 		pos(1) = trans.y;
 		pos(2) = trans.z;
@@ -112,34 +120,11 @@ CC_FILE_ERROR PcdFilter::saveToFile(ccHObject* entity, const QString& filename, 
 		Eigen::Matrix3f eigrot;
 		for (int i = 0; i < 3; ++i)
 			for (int j = 0; j < 3; ++j)
-				eigrot(i, j) = sensorMatrix.getColumn(j)[i];
+				eigrot(i,j) = mat.getColumn(j)[i];
 
 		//now translate to a quaternion
 		ori = Eigen::Quaternionf(eigrot);
-
-		// we have to project the cloud to the sensor CS
-		ccPointCloud* tempCloud = ccCloud->cloneThis(nullptr, true);
-		if (!tempCloud)
-		{
-			return CC_FILE_ERROR::CC_FERR_NOT_ENOUGH_MEMORY;
-		}
-		tempCloud->applyRigidTransformation(sensorMatrix.inverse());
-
-		pclCloud = cc2smReader(tempCloud).getAsSM();
-
-		delete tempCloud;
-		tempCloud = nullptr;
 	}
-	else
-	{
-		pclCloud = cc2smReader(ccCloud).getAsSM();
-	}
-	
-	if (!pclCloud)
-	{
-		return CC_FERR_THIRD_PARTY_LIB_FAILURE;
-	}
-
 	if (ccCloud->size() == 0)
 	{
 		pcl::PCDWriter p;
