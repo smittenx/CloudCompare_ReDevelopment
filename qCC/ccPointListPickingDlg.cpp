@@ -864,13 +864,14 @@ void ccPointListPickingDlg::exportToReferencePolyline()
 	QTextStream stream(&fp);
 	stream.setRealNumberPrecision(12);
 
-    std::vector<CCVector3> Points_vec;
+    std::vector<CPosition> Points_vec;
 
 	for(int i = 0; i < labels.size(); i ++)
 	{
 		cc2DLabel::PickedPoint PP = labels[i]->getPickedPoint(0);
 		CCVector3 P = PP.getPointPosition();
-		Points_vec.push_back(P);
+		CPosition Pyaw = CPosition(P);
+		Points_vec.push_back(Pyaw);
 	}
 	
     //B三次样条
@@ -888,7 +889,9 @@ void ccPointListPickingDlg::exportToReferencePolyline()
 		int distance = sqrt((P1.x-P2.x)*(P1.x-P2.x)+(P1.y-P2.y)*(P1.y-P2.y));
 		insertnum[i] = distance/4;//每两个点间添加的点的数量
 	}
-    
+
+	insertnum.push_back(sqrt( (labels[0]->getPickedPoint(0).getPointPosition().x-labels[num-1]->getPickedPoint(0).getPointPosition().x)*(labels[0]->getPickedPoint(0).getPointPosition().x-labels[num-1]->getPickedPoint(0).getPointPosition().x)+(labels[0]->getPickedPoint(0).getPointPosition().y-labels[num-1]->getPickedPoint(0).getPointPosition().y)*(labels[0]->getPickedPoint(0).getPointPosition().y-labels[num-1]->getPickedPoint(0).getPointPosition().y) )/4);
+
 	QWidget* widget = tableWidget->cellWidget(num-1, 5);
 	QComboBox *combox = (QComboBox*)widget;
 	QString string = combox->currentText();
@@ -897,16 +900,18 @@ void ccPointListPickingDlg::exportToReferencePolyline()
     
 	ThreeOrderBSplineInterpolatePt(Points_vec, num, insertnum, isClosed);
 
+    ComputeYaw(Points_vec);
+
 	for(int i = 0; i < Points_vec.size(); i ++)
 	{
-		CCVector3 P = Points_vec[i];
+		CPosition PPyaw = Points_vec[i];
 
 		stream << i <<',';
 		stream << i << ',';//poi_type
-		stream << static_cast<double>(P.x)/scale - shift.x << ','
-		               << static_cast<double>(P.y)/scale - shift.y << ','
-					   << static_cast<double>(P.z)/scale - shift.z << ','
-					   <<i<<','//point_yaw
+		stream << static_cast<double>(PPyaw.p.x)/scale - shift.x << ','
+		               << static_cast<double>(PPyaw.p.y)/scale - shift.y << ','
+					   << static_cast<double>(PPyaw.p.z)/scale - shift.z << ','
+					   <<PPyaw.yaw<<','//point_yaw
 					   <<i<<','//s
 					   <<i<<','//lng
 					   <<i <<','//lat
@@ -915,14 +920,14 @@ void ccPointListPickingDlg::exportToReferencePolyline()
 	}
 }
 
-void ccPointListPickingDlg::ThreeOrderBSplineInterpolatePt(std::vector<CCVector3>& Points_vec, int Num, std::vector<int> InsertNum, bool isClosed)
+void ccPointListPickingDlg::ThreeOrderBSplineInterpolatePt(std::vector<CPosition>& Points_vec, int Num, std::vector<int> InsertNum, bool isClosed)
 {
 	if(Points_vec.empty()||InsertNum.size() == 0) return;
 
 	int InsertNumSum = 0;
 	for(int i = 0; i < Num - 1; i ++) InsertNumSum += InsertNum[i];
 
-	std::vector<CCVector3> Points_vec_new(Num + 2);
+	std::vector<CPosition> Points_vec_new(Num + 2);
 
 	for(int i = 0; i < Num; i ++)
 	{
@@ -931,22 +936,22 @@ void ccPointListPickingDlg::ThreeOrderBSplineInterpolatePt(std::vector<CCVector3
     
    if(isClosed)
    {
-        Points_vec_new[0].x = Points_vec_new[Num].x;
-	    Points_vec_new[0].y = Points_vec_new[Num].y;
-        Points_vec_new[0].z = Points_vec_new[1].z;
+        Points_vec_new[0].p.x = Points_vec_new[Num].p.x;
+	    Points_vec_new[0].p.y = Points_vec_new[Num].p.y;
+        Points_vec_new[0].p.z = Points_vec_new[1].p.z;
 
-    	Points_vec_new[Num + 1].x = Points_vec_new[1].x;
-        Points_vec_new[Num + 1].y = Points_vec_new[1].y;
-        Points_vec_new[Num + 1].z = Points_vec_new[1].z;
+    	Points_vec_new[Num + 1].p.x = Points_vec_new[1].p.x;
+        Points_vec_new[Num + 1].p.y = Points_vec_new[1].p.y;
+        Points_vec_new[Num + 1].p.z = Points_vec_new[1].p.z;
    }else
    {
-        Points_vec_new[0].x = 2*Points_vec_new[1].x - Points_vec_new[2].x;
-    	Points_vec_new[0].y = 2*Points_vec_new[1].y - Points_vec_new[2].y;
-        Points_vec_new[0].z = Points_vec_new[1].z;
+        Points_vec_new[0].p.x = 2*Points_vec_new[1].p.x - Points_vec_new[2].p.x;
+    	Points_vec_new[0].p.y = 2*Points_vec_new[1].p.y - Points_vec_new[2].p.y;
+        Points_vec_new[0].p.z = Points_vec_new[1].p.z;
 
-    	Points_vec_new[Num + 1].x = 2*Points_vec_new[Num].x - Points_vec_new[Num-1].x;
-        Points_vec_new[Num + 1].y = 2*Points_vec_new[Num].y - Points_vec_new[Num-1].y;
-        Points_vec_new[Num + 1].z = Points_vec_new[Num].z;
+    	Points_vec_new[Num + 1].p.x = 2*Points_vec_new[Num].p.x - Points_vec_new[Num-1].p.x;
+        Points_vec_new[Num + 1].p.y = 2*Points_vec_new[Num].p.y - Points_vec_new[Num-1].p.y;
+        Points_vec_new[Num + 1].p.z = Points_vec_new[Num].p.z;
    }
 
     CCVector3 NodePt1, NodePt2, NodePt3, NodePt4;
@@ -958,27 +963,27 @@ void ccPointListPickingDlg::ThreeOrderBSplineInterpolatePt(std::vector<CCVector3
 
 	for(int i = 0; i < Num - 1; i ++)
 	{
-		NodePt1 = Points_vec_new[i];
-		NodePt2 = Points_vec_new[i+1];
-		NodePt3 = Points_vec_new[i+2];
-		NodePt4 = Points_vec_new[i+3];
+		NodePt1 = Points_vec_new[i].p;
+		NodePt2 = Points_vec_new[i+1].p;
+		NodePt3 = Points_vec_new[i+2].p;
+		NodePt4 = Points_vec_new[i+3].p;
 		double dt = 1.0/(InsertNum[i] + 1);
         
 		for(int j = 0; j < InsertNum[i] + 1; j ++)
 		{
 			t = dt*j;
-			Points_vec[totalnum].x = F03(t)*NodePt1.x + F13(t)*NodePt2.x + F23(t)*NodePt3.x + F33(t)*NodePt4.x;
-			Points_vec[totalnum].y = F03(t)*NodePt1.y + F13(t)*NodePt2.y + F23(t)*NodePt3.y + F33(t)*NodePt4.y;
-			Points_vec[totalnum].z = Points_vec_new[0].z;
+			Points_vec[totalnum].p.x = F03(t)*NodePt1.x + F13(t)*NodePt2.x + F23(t)*NodePt3.x + F33(t)*NodePt4.x;
+			Points_vec[totalnum].p.y = F03(t)*NodePt1.y + F13(t)*NodePt2.y + F23(t)*NodePt3.y + F33(t)*NodePt4.y;
+			Points_vec[totalnum].p.z = Points_vec_new[0].p.z;
 			totalnum ++;
 		}
     
 		if(i == Num - 2)
 		{
 			t = 1;
-			Points_vec[totalnum].x = F03(t)*NodePt1.x + F13(t)*NodePt2.x + F23(t)*NodePt3.x + F33(t)*NodePt4.x;
-			Points_vec[totalnum].y = F03(t)*NodePt1.y + F13(t)*NodePt2.y + F23(t)*NodePt3.y + F33(t)*NodePt4.y;
-			Points_vec[totalnum].z = Points_vec_new[0].z;
+			Points_vec[totalnum].p.x = F03(t)*NodePt1.x + F13(t)*NodePt2.x + F23(t)*NodePt3.x + F33(t)*NodePt4.x;
+			Points_vec[totalnum].p.y = F03(t)*NodePt1.y + F13(t)*NodePt2.y + F23(t)*NodePt3.y + F33(t)*NodePt4.y;
+			Points_vec[totalnum].p.z = Points_vec_new[0].p.z;
 			totalnum ++;
 		}
 		
@@ -986,24 +991,23 @@ void ccPointListPickingDlg::ThreeOrderBSplineInterpolatePt(std::vector<CCVector3
     
 	if(isClosed)
 	{
-		Points_vec.resize(Num + InsertNumSum + InsertNum[0]);
-        NodePt1 = Points_vec_new[Num-1];
-	    NodePt2 = Points_vec_new[Num];
-	    NodePt3 = Points_vec_new[1];
-	    NodePt4 = Points_vec_new[2];
-	    double dt = 1.0/(InsertNum[Num-2] + 1);
+		Points_vec.resize(Num + InsertNumSum + InsertNum[Num-1]-1);
+        NodePt1 = Points_vec_new[Num-1].p;
+	    NodePt2 = Points_vec_new[Num].p;
+	    NodePt3 = Points_vec_new[1].p;
+	    NodePt4 = Points_vec_new[2].p;
+	    double dt = 1.0/(InsertNum[Num-1] + 1);
 
-        for(int j = 0; j < InsertNum[Num-2] + 1; j ++)
+        for(int j = 1; j < InsertNum[Num-1] + 1; j ++)
     	{
     		t = dt*j;
-    		Points_vec[totalnum].x = F03(t)*NodePt1.x + F13(t)*NodePt2.x + F23(t)*NodePt3.x + F33(t)*NodePt4.x;
-    		Points_vec[totalnum].y = F03(t)*NodePt1.y + F13(t)*NodePt2.y + F23(t)*NodePt3.y + F33(t)*NodePt4.y;
-    		Points_vec[totalnum].z = Points_vec_new[0].z;
+    		Points_vec[totalnum].p.x = F03(t)*NodePt1.x + F13(t)*NodePt2.x + F23(t)*NodePt3.x + F33(t)*NodePt4.x;
+    		Points_vec[totalnum].p.y = F03(t)*NodePt1.y + F13(t)*NodePt2.y + F23(t)*NodePt3.y + F33(t)*NodePt4.y;
+    		Points_vec[totalnum].p.z = Points_vec_new[0].p.z;
     		totalnum ++;
     	}
 	}
 }
-
 double ccPointListPickingDlg::F03(double t)
 {
 	return 1.0/6*(-t*t*t+3*t*t-3*t+1);
@@ -1019,4 +1023,33 @@ double ccPointListPickingDlg::F23(double t)
 double ccPointListPickingDlg::F33(double t)
 {
 	return 1.0/6*t*t*t;
+}
+
+void ccPointListPickingDlg::ComputeYaw(std::vector<CPosition>& Points_vec)
+{
+	for(int i = 0; i < Points_vec.size()-1; i ++)
+	{
+		CPosition P1 = Points_vec[i];
+
+		
+        CPosition P2 = Points_vec[i+1];
+
+		CCVector3 p1 = P1.p;
+		CCVector3 p2 = P2.p;
+        double x = (p1.y-p2.y)/(p1.x-p2.x);
+		double yyaw = atan(x);
+
+		Points_vec[i].yaw = yyaw;
+	}
+
+	CPosition P1 = Points_vec[Points_vec.size()-1];
+    CPosition P2 = Points_vec[0];
+    
+	CCVector3 p1 = P1.p;
+	CCVector3 p2 = P2.p;
+    double x = (p1.y-p2.y)/(p1.x-p2.x);
+	double yyaw = atan(x);
+
+	Points_vec[Points_vec.size()-1].yaw = yyaw;
+
 }

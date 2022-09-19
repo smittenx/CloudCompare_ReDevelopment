@@ -32,6 +32,15 @@ class cc2DLabel;
 //! Dialog/interactor to graphically pick a list of points
 /** Options let the user export the list to an ASCII file, a new cloud, a polyline, etc.
 **/
+
+struct CPosition
+{
+    CCVector3 p;
+	double yaw;
+	CPosition(CCVector3 _p) {p = _p;}
+	CPosition(){};
+};
+
 class ccPointListPickingDlg : public ccPointPickingGenericInterface, public Ui::PointListPickingDlg
 {
 	Q_OBJECT
@@ -79,7 +88,9 @@ protected:
 	void setlabel();
 
     //!三次B样条拟合函数
-    void ThreeOrderBSplineInterpolatePt(std::vector<CCVector3>& Points_vec, int Num, std::vector<int> InsertNum, bool isClosed);
+    void ThreeOrderBSplineInterpolatePt(std::vector<CPosition>& Points_vec, int Num, std::vector<int> InsertNum, bool isClosed);
+    void ComputeYaw(std::vector<CPosition>& Points_vec);
+
 	double F03(double t);
 	double F13(double t);
 	double F23(double t);
