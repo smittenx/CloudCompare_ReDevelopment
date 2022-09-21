@@ -565,6 +565,53 @@ void ccPointListPickingDlg::exportToASCII(ExportFormat format)
 				//ccLog::Print(QString(object_start_index));
 			}
 
+
+
+			if(i == count-1)
+			{
+				QWidget* widget = tableWidget->cellWidget(i, 5);
+		        QComboBox *combox = (QComboBox*)widget;
+		        QString string = combox->currentText();
+
+				if(!QString::compare(string, str))
+				{
+					stream <<i<<',';
+			        stream << labels[i]->getClass()<<',';
+                    preclass = labels[i]->getClass();
+
+         			stream	<< static_cast<double>(P.x) / scale - shift.x << ','
+		    		<< static_cast<double>(P.y) / scale - shift.y << ','
+			    	<< static_cast<double>(P.z) / scale - shift.z << endl;
+
+                    //9.9 添加内容 保存第一个点
+		            const cc2DLabel::PickedPoint& PP1 = labels[object_start_index]->getPickedPoint(0);
+		            CCVector3 P1 = PP1.getPointPosition();
+				
+				    //stream << labels[object_start_index]->getName()<<',';
+				    stream <<object_start_index<<',';
+					stream << labels[object_start_index]->getClass()<<',';
+
+				    stream	<< static_cast<double>(P1.x) / scale - shift.x << ','
+				    << static_cast<double>(P1.y) / scale - shift.y << ','
+				    << static_cast<double>(P1.z) / scale - shift.z;
+
+					continue;
+				}
+				else
+				{
+                    stream <<i<<',';
+			        stream << labels[i]->getClass()<<',';
+                    preclass = labels[i]->getClass();
+
+         			stream	<< static_cast<double>(P.x) / scale - shift.x << ','
+		    		<< static_cast<double>(P.y) / scale - shift.y << ','
+			    	<< static_cast<double>(P.z) / scale - shift.z;
+
+					continue;
+				}
+			}
+
+
 			//正常情况下需要保存的内容格式
 			{
 		    //stream << labels[i]->getName()<<',';
@@ -577,28 +624,6 @@ void ccPointListPickingDlg::exportToASCII(ExportFormat format)
 				<< static_cast<double>(P.z) / scale - shift.z << endl;
 			}
 
-			if(i == count-1)
-			{
-				QWidget* widget = tableWidget->cellWidget(i, 5);
-		        QComboBox *combox = (QComboBox*)widget;
-		        QString string = combox->currentText();
-
-				if(!QString::compare(string, str))
-				{
-                    //9.9 添加内容 保存第一个点
-		            const cc2DLabel::PickedPoint& PP1 = labels[object_start_index]->getPickedPoint(0);
-		            CCVector3 P1 = PP1.getPointPosition();
-				
-				    //stream << labels[object_start_index]->getName()<<',';
-				    stream <<object_start_index<<',';
-					stream << labels[object_start_index]->getClass()<<',';
-
-				    stream	<< static_cast<double>(P1.x) / scale - shift.x << ','
-				    << static_cast<double>(P1.y) / scale - shift.y << ','
-				    << static_cast<double>(P1.z) / scale - shift.z << endl;
-				}
-			}
-            
 			break;
 
 		default:
